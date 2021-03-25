@@ -90,8 +90,6 @@ public class Ball {
 
     // if the distance is less than the radius, collision!
     if (distance <= this.size / 2) {
-      println("collision " + sideX + " " + sideY);
-      
       if( !this.isIntersects ){
         this.isIntersects = true;
         
@@ -129,7 +127,6 @@ public class Ball {
        */
       if( this.isIntersects ){
         this.isIntersects = false;
-        println("collision reset");
       }
     }
   }
@@ -142,11 +139,10 @@ public class Ball {
     return obj;
   }
 
-  void parseJsonString(String jsonString) {
-    jsonIn = parseJSONObject(jsonString);
+  void parseJsonString(JSONObject jsonObj) {
     if ( jsonIn != null ) {
-      this.x = jsonIn.getInt("ballX");
-      this.y = jsonIn.getInt("ballY");
+      this.x = jsonObj.getInt("ballX");
+      this.y = jsonObj.getInt("ballY");
     }
   }
 }

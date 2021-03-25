@@ -6,16 +6,18 @@ public class Paddle {
   int y;
   int size;
   int speed;
+  boolean isAlive;
   Integer paddleColor;
   String paddleDirection;
+  String name;
   JSONObject jsonOut;
   JSONObject jsonIn;
-  String name;
   
   Paddle(int paddleSize, int paddleLR, Integer paddleColor){
     this.y = height / 2;
     this.size = paddleSize;
     this.speed = 15;
+    this.isAlive = false;
     this.paddleColor = (paddleColor == null) ? #FFFFFF : paddleColor;
     this.paddleDirection = "";
     jsonOut = new JSONObject();
@@ -45,18 +47,16 @@ public class Paddle {
         boolean isAboveScreen = this.y + this.size + this.speed < height;
         this.y = isAboveScreen ? this.y + this.speed : height - this.size;
       }
-    } else {
-      this.paddleDirection = ""; 
     }
   }
   
   JSONObject toJsonObj(JSONObject jsonObj){
-    JSONObject obj = (jsonObj == null) ? jsonOut : jsonObj;
+    this.jsonOut = (jsonObj == null) ? new JSONObject() : jsonObj;
     
-    obj.setInt(this.name + "X", this.x);
-    obj.setInt(this.name + "Y", this.y);
-    obj.setInt(this.name + "Color", this.paddleColor);
-    return obj;
+    this.jsonOut.setInt(this.name + "X", this.x);
+    this.jsonOut.setInt(this.name + "Y", this.y);
+    this.jsonOut.setInt(this.name + "Color", this.paddleColor);
+    return this.jsonOut;
   }
   
   void parseJsonString(String jsonString){

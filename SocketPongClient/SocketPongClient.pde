@@ -1,21 +1,25 @@
+import java.util.*;
 import websockets.*;
 
 static final boolean DEBUG_ENABLED = false;
 WebsocketClient wsc;
-Ball ball;
+ArrayList<Ball> pongBalls;
+Object listModLock = new Object();
 Paddle paddleLeft;
 Paddle paddleRight;
 
 String jsonClientMsg;
 int ballDiameter = 50;
 int paddleLength = 100;
+int scoreLeft = 0;
+int scoreRight = 0;
 int updateFreqMs = 20;
 int now;
 
 void setup() {
   size(800, 800);
   
-  ball = new Ball(ballDiameter, 3);
+  pongBalls = new ArrayList<Ball>();
   paddleLeft = new Paddle(paddleLength, Paddle.PADDLE_LEFT, null);
   paddleRight = new Paddle(paddleLength, Paddle.PADDLE_RIGHT, #0000FF);
   //wsc= new WebsocketClient(this, "ws://localhost:8000/unnamed");
@@ -35,19 +39,57 @@ void draw() {
     wsc.sendMessage(jsonClientMsg);
     now = millis();
   }
-  
-  ball.update();
+
   paddleRight.update();
   
-  if( ball.x < width / 2 ){
-    ball.isCollision(paddleLeft);
-  } else {
-    ball.isCollision(paddleRight);
+  synchronized(listModLock) {
+    for( Ball ball : pongBalls ){
+      if( ball.x < width / 2 ){
+        ball.isCollision(paddleLeft);
+      } else {
+        ball.isCollision(paddleRight);
+      }
+    
+      ball.draw();
+    }
   }
 
-  ball.draw();
   paddleLeft.draw();
   paddleRight.draw();
+  drawScore();
+}
+
+void drawScore(){
+  fill(paddleLeft.paddleColor);
+  text("Score: " + scoreLeft, 50, 50);
+  fill(paddleRight.paddleColor);
+  text("Score: " + scoreRight, 50, 50);
+}
+
+void parseScore(String gameInfoJsonString) {
+  JSONObject jsonObj = parseJSONObject(gameInfoJsonString);
+  if( jsonObj != null ){
+    scoreLeft = jsonObj.getInt("scoreLeft");
+    scoreRight = jsonObj.getInt("scoreRight");
+  }
+}
+
+void parseJsonPongBalls(String gameInfoJsonString){
+  JSONObject obj = parseJSONObject(gameInfoJsonString);
+  JSONArray pongBallsObj = obj.getJSONArray("pongBalls");
+  
+  synchronized(listModLock){
+    // TODO: optimize this later. Maybe more efficient way than to clear
+    // the list and re-add pong balls every cycle.
+    pongBalls.clear();
+  
+    for( int i = 0; i < pongBallsObj.size(); i++ ){
+      JSONObject ballObj = pongBallsObj.getJSONObject(i);
+      Ball b = new Ball(ballDiameter, 3);
+      b.parseJsonString(ballObj);
+      pongBalls.add(b);
+    }
+  }
 }
 
 // Called when getting a message from the server/host
@@ -55,6 +97,7 @@ void webSocketEvent(String gameInfoJsonString){
   if( DEBUG_ENABLED ){
     println("message from server:\n" + gameInfoJsonString);
   }
-  ball.parseJsonString(gameInfoJsonString);
   paddleLeft.parseJsonString(gameInfoJsonString);
+  parseJsonPongBalls(gameInfoJsonString);
+  parseScore(gameInfoJsonString);
 }

@@ -50,8 +50,7 @@ public class Ball {
       this.y = height / 2;
 
       int calcSpeed = int(random(speed)) + 3;
-      //this.speedX = (random(1) >= 0.5) ? calcSpeed : -calcSpeed;
-      this.speedX = -calcSpeed;
+      this.speedX = (random(1) >= 0.5) ? calcSpeed : -calcSpeed;
 
       calcSpeed = int(random(speed)) + 3;
       this.speedY = (random(1) >= 0.5) ? calcSpeed : -calcSpeed;
@@ -89,9 +88,7 @@ public class Ball {
     float distance = sqrt( (distX*distX) + (distY*distY) );
 
     // if the distance is less than the radius, collision!
-    if (distance <= this.size / 2) { //<>//
-      println("collision " + sideX + " " + sideY);
-      
+    if (distance <= this.size / 2) {
       if( !this.isIntersects ){
         this.isIntersects = true;
         
@@ -128,8 +125,7 @@ public class Ball {
        * direction until the ball and paddle no longer intersect 
        */
       if( this.isIntersects ){
-        this.isIntersects = false; //<>//
-        println("collision reset");
+        this.isIntersects = false;
       }
     }
   }
@@ -142,8 +138,9 @@ public class Ball {
     return obj;
   }
 
-  void parseJsonString(String jsonString) {
-    jsonIn = parseJSONObject(jsonString);
+  void parseJsonString(JSONObject jsonObj) {
+    jsonIn = jsonObj;
+
     if ( jsonIn != null ) {
       this.x = jsonIn.getInt("ballX");
       this.y = jsonIn.getInt("ballY");
