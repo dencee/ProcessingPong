@@ -50,7 +50,8 @@ public class Ball {
       this.y = height / 2;
 
       int calcSpeed = int(random(speed)) + 3;
-      this.speedX = (random(1) >= 0.5) ? calcSpeed : -calcSpeed;
+      //this.speedX = (random(1) >= 0.5) ? calcSpeed : -calcSpeed;
+      this.speedX = -calcSpeed;
 
       calcSpeed = int(random(speed)) + 3;
       this.speedY = (random(1) >= 0.5) ? calcSpeed : -calcSpeed;
@@ -61,24 +62,25 @@ public class Ball {
   // http://jeffreythompson.org/collision-detection/circle-rect.php
   void isCollision(Paddle p) {
     // temporary variables to set edges for testing
-    String side = "";
+    String sideX = "";
+    String sideY = "";
     float testX = this.x;
     float testY = this.y;
 
     // which edge is closest?
     if (this.x < p.x) {
       testX = p.x;                        // Ball is left of the paddle
-      side = "left";
-    } else if (this.x > p.x + Paddle.PADDLE_WIDTH) {
+      sideX = "left";
+    } else if (this.x > p.x + (Paddle.PADDLE_WIDTH/2)) {
       testX = p.x + Paddle.PADDLE_WIDTH;  // Ball is right of the paddle
-      side = "right";
+      sideX = "right";
     }
     if (this.y < p.y) {
       testY = p.y;                        // Ball is above the paddle
-      side = "top";
+      sideY = "top";
     } else if (this.y > p.y + p.size) {
       testY = p.y + p.size;               // Ball is below the paddle
-      side = "bottom";
+      sideY = "bottom";
     }
 
     // get distance from closest edges
@@ -88,22 +90,29 @@ public class Ball {
 
     // if the distance is less than the radius, collision!
     if (distance <= this.size / 2) {
-      println("collision " + side);
-      if ( !this.isIntersects ) {
+      println("collision " + sideX + " " + sideY);
+      
+      if( !this.isIntersects ){
         this.isIntersects = true;
         
-        switch(side){
+        switch(sideX) {
           case "right":
-            this.speedX = (this.speedX < 0) ? -this.speedX : this.speedX;
+            this.speedX = (this.speedX < 0) ? -(this.speedX+1) : this.speedX + 1;
             break;
           case "left":
-            this.speedX = (this.speedX > 0) ? -this.speedX : this.speedX;
+            this.speedX = (this.speedX > 0) ? -(this.speedX+1) : this.speedX + 1;
             break;
+          default:
+            // Can't tell where the ball is so make
+            // no changes to the direction
+            break;
+        }   
+        switch(sideY) {
           case "top":
-            this.speedY = (this.speedY > 0) ? -this.speedY : this.speedY;
+            this.speedY = (this.speedY > 0) ? -(this.speedY+1) : this.speedY + 1;
             break;
           case "bottom":
-            this.speedY = (this.speedY < 0) ? -this.speedY : this.speedY;
+            this.speedY = (this.speedY < 0) ? -(this.speedY+1) : this.speedY + 1;
             break;
           default:
             // Can't tell where the ball is so make
@@ -118,8 +127,10 @@ public class Ball {
        * Resetting the variable here ensures there's only 1 change of
        * direction until the ball and paddle no longer intersect 
        */
-      this.isIntersects = false;
-      println("collision reset");
+      if( this.isIntersects ){
+        this.isIntersects = false;
+        println("collision reset");
+      }
     }
   }
 

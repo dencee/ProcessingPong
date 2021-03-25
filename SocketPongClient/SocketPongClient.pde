@@ -39,8 +39,11 @@ void draw() {
   ball.update();
   paddleRight.update();
   
-  ball.isCollision(paddleLeft);
-  ball.isCollision(paddleRight);
+  if( ball.x < width / 2 ){
+    ball.isCollision(paddleLeft);
+  } else {
+    ball.isCollision(paddleRight);
+  }
 
   ball.draw();
   paddleLeft.draw();

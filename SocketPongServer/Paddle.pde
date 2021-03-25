@@ -7,6 +7,7 @@ public class Paddle {
   int size;
   int speed;
   Integer paddleColor;
+  String paddleDirection;
   JSONObject jsonOut;
   JSONObject jsonIn;
   String name;
@@ -16,6 +17,7 @@ public class Paddle {
     this.size = paddleSize;
     this.speed = 15;
     this.paddleColor = (paddleColor == null) ? #FFFFFF : paddleColor;
+    this.paddleDirection = "";
     jsonOut = new JSONObject();
     jsonIn = new JSONObject();
     
@@ -36,11 +38,15 @@ public class Paddle {
   void update(){
     if (keyPressed && key == CODED) {
       if (keyCode == UP) {
+        this.paddleDirection = "up";
         this.y = (this.y - this.speed >= 0) ? this.y - this.speed : 0;
       } else if (keyCode == DOWN) {
+        this.paddleDirection = "down";
         boolean isAboveScreen = this.y + this.size + this.speed < height;
         this.y = isAboveScreen ? this.y + this.speed : height - this.size;
       }
+    } else {
+      this.paddleDirection = ""; 
     }
   }
   
