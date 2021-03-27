@@ -1,7 +1,8 @@
 import java.util.*;
 import websockets.*;
 
-static final boolean DEBUG_ENABLED = false;
+static final boolean SERVER_DEBUG_ENABLED = false;
+static final boolean CLIENT_DEBUG_ENABLED = false;
 WebsocketClient wsc;
 ArrayList<Ball> pongBalls;
 Object listModLock = new Object();
@@ -23,7 +24,8 @@ void setup() {
   paddleLeft = new Paddle(paddleLength, Paddle.PADDLE_LEFT, null);
   paddleRight = new Paddle(paddleLength, Paddle.PADDLE_RIGHT, #0000FF);
   //wsc= new WebsocketClient(this, "ws://localhost:8000/unnamed");
-  wsc= new WebsocketClient(this,  "ws://76.167.223.125:8000");
+  //wsc= new WebsocketClient(this,  "ws://172.31.61.66:8843");
+  wsc= new WebsocketClient(this,  "ws://44.242.154.68:8843");
   now = millis();
 }
 
@@ -33,9 +35,7 @@ void draw() {
   // Send message to server/host
   if(millis() > now + updateFreqMs) {
     jsonClientMsg = paddleRight.toJsonObj(null).toString();
-    if( DEBUG_ENABLED ){
-      println("Client Sending\n" + jsonClientMsg);
-    }
+    if( CLIENT_DEBUG_ENABLED ){ println("Client Sending\n" + jsonClientMsg); }
     wsc.sendMessage(jsonClientMsg);
     now = millis();
   }
@@ -63,7 +63,7 @@ void drawScore(){
   fill(paddleLeft.paddleColor);
   text("Score: " + scoreLeft, 50, 50);
   fill(paddleRight.paddleColor);
-  text("Score: " + scoreRight, 50, 50);
+  text("Score: " + scoreRight, width - 100 - 50, 50);
 }
 
 void parseScore(String gameInfoJsonString) {
@@ -94,7 +94,7 @@ void parseJsonPongBalls(String gameInfoJsonString){
 
 // Called when getting a message from the server/host
 void webSocketEvent(String gameInfoJsonString){
-  if( DEBUG_ENABLED ){
+  if( SERVER_DEBUG_ENABLED ){
     println("message from server:\n" + gameInfoJsonString);
   }
   paddleLeft.parseJsonString(gameInfoJsonString);

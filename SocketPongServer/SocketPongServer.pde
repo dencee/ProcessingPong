@@ -1,7 +1,8 @@
 import java.util.*;
 import websockets.*;
 
-static final boolean DEBUG_ENABLED = false;
+static final boolean SERVER_DEBUG_ENABLED = false;
+static final boolean CLIENT_DEBUG_ENABLED = false;
 WebsocketServer ws;
 Paddle paddleLeft;
 Paddle paddleRight;
@@ -22,7 +23,7 @@ void setup(){
   pongBalls = new ArrayList<Ball>();
   paddleLeft = new Paddle(paddleLength, Paddle.PADDLE_LEFT, #FFFF00);
   paddleRight = new Paddle(paddleLength, Paddle.PADDLE_RIGHT, null);
-  ws = new WebsocketServer(this, 8000, "");
+  ws = new WebsocketServer(this, 8443, "");
   now = millis();
 }
 
@@ -34,7 +35,7 @@ void draw(){
    */
   if(millis() > now + updateFreqMs) {
     jsonClientMsg = generateJsonGameInfo();
-    if( DEBUG_ENABLED ){ println("Server Sending\n" + jsonClientMsg); }
+    if( SERVER_DEBUG_ENABLED ){ println("Server Sending\n" + jsonClientMsg); }
     ws.sendMessage(jsonClientMsg);
     now = millis();
   }
@@ -102,7 +103,7 @@ String generateJsonGameInfo(){
     
     obj.setJSONArray("pongBalls", arrObj);    
     obj.setInt("scoreLeft", scoreLeft);
-    obj.setInt("scoreright", scoreRight);
+    obj.setInt("scoreRight", scoreRight);
     
     return obj.toString();
 }
@@ -119,6 +120,6 @@ void drawScore(){
  * Called when getting a message from the client/player
  */
 void webSocketServerEvent(String gameInfoJsonString){
-  if( DEBUG_ENABLED ){ println("message from client:\n" + gameInfoJsonString); }
+  if( CLIENT_DEBUG_ENABLED ){ println("message from client:\n" + gameInfoJsonString); }
   paddleRight.parseJsonString(gameInfoJsonString);
 }
