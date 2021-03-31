@@ -95,10 +95,10 @@ public class Ball {
         
         switch(sideX) {
           case "right":
-            this.speedX = (this.speedX < 0) ? -(this.speedX+1) : this.speedX + 1;
+            this.speedX = (this.speedX < 0) ? -(this.speedX + 3) : this.speedX + 3;
             break;
           case "left":
-            this.speedX = (this.speedX > 0) ? -(this.speedX+1) : this.speedX + 1;
+            this.speedX = (this.speedX > 0) ? -(this.speedX + 3) : this.speedX + 3;
             break;
           default:
             // Can't tell where the ball is so make
@@ -107,10 +107,10 @@ public class Ball {
         }   
         switch(sideY) {
           case "top":
-            this.speedY = (this.speedY > 0) ? -(this.speedY+1) : this.speedY + 1;
+            this.speedY = (this.speedY > 0) ? -(this.speedY + 2) : this.speedY + 2;
             break;
           case "bottom":
-            this.speedY = (this.speedY < 0) ? -(this.speedY+1) : this.speedY + 1;
+            this.speedY = (this.speedY < 0) ? -(this.speedY + 2) : this.speedY + 2;
             break;
           default:
             // Can't tell where the ball is so make

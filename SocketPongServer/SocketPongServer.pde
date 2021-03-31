@@ -1,5 +1,6 @@
 import java.util.*;
 import processing.net.*;
+import javax.swing.JOptionPane;
 
 static final boolean SERVER_DEBUG_ENABLED = false;
 static final boolean CLIENT_DEBUG_ENABLED = false;
@@ -21,40 +22,10 @@ int now;
 
 void setup(){
   size(800, 600);
-  background(0);
-/*  
-  String leftOrRight = "";
-  String initials = "";
   
-  fill(255);
-  textSize(26);
-  text("Do you want a paddle on the\n    left or right side (L/R)?", 200, height/2);
-  while(true){
-    if( keyPressed ){
-      if( key==ENTER||key==RETURN ){
-        break;
-      } else {
-        println("pressed");
-        leftOrRight += key;
-        text(leftOrRight, 100, height/2 + 100);
-      }
-    }
-  }
-  
-  while(true){
-    text("Enter Your Initials", 100, height/2);
-    if( keyPressed ){
-      if( key==ENTER||key==RETURN ){
-        break;
-      } else {
-        initials += key;
-      }
-    }
-  }
-*/  
+  myPaddle = getUserPaddle();
+  paddles.put(myPaddle.name, myPaddle);
   pongBalls = new ArrayList<Ball>();
-  myPaddle = new Paddle("server", paddleLength, Paddle.PADDLE_LEFT, #FF0000);
-  paddles.put("server", myPaddle);
   server = new Server(this, 8443);
   now = millis();
 }
@@ -141,8 +112,33 @@ void drawPaddles(){
   }
 }
 
-void keyTyped(){
+void drawScore(){
+  textSize(22);
+  fill(#FFFF00);
+  text("Score: " + scoreLeft, 50, 50);
+  text("Score: " + scoreRight, width - 100 - 50, 50);
+}
+
+Paddle getUserPaddle(){
+  String leftOrRight = "";
+  String initials = "";
   
+  while( !leftOrRight.equals("l") && !leftOrRight.equals("r") ){
+    leftOrRight = JOptionPane.showInputDialog("Left or Right side?(l/r)").toLowerCase();
+  }
+  
+  while( initials.length() == 0 ){
+    initials = JOptionPane.showInputDialog("Enter your initials:").toUpperCase();
+  }
+  
+  initials = initials.length() > 3 ? initials.substring(0, 3) : initials;
+  color randomColor = color(random(255), random(255), color(255));
+
+  if( leftOrRight.equals("l") ){
+    return new Paddle(initials, paddleLength, Paddle.PADDLE_LEFT, randomColor);
+  } 
+  
+  return new Paddle(initials, paddleLength, Paddle.PADDLE_RIGHT, randomColor);
 }
 
 void keyReleased(){
@@ -175,13 +171,6 @@ String generateJsonGameInfo(){
     return obj.toString();
 }
 
-void drawScore(){
-  textSize(22);
-  fill(#FFFF00);
-  text("Score: " + scoreLeft, 50, 50);
-  text("Score: " + scoreRight, width - 100 - 50, 50);
-}
-
 void parseJsonPaddles(String gameInfoJsonString){
   JSONObject obj = parseJSONObject(gameInfoJsonString);
   JSONArray paddlesObj = obj.getJSONArray("paddles");
@@ -191,6 +180,12 @@ void parseJsonPaddles(String gameInfoJsonString){
     for( int i = 0; i < paddlesObj.size(); i++ ){
       JSONObject paddleObj = paddlesObj.getJSONObject(i);
       String paddleName = paddleObj.getString("name");
+      
+      // DO NOT update the server's paddle from client's info,
+      // it's updated in the client code (i.e., this code)
+      if( paddleName.equals(myPaddle.name) ){
+        continue; 
+      }
       
       if( paddles.containsKey( paddleName ) ){
         Paddle paddle = paddles.get(paddleName);
@@ -221,8 +216,8 @@ void sendDataToClients(){
  */
 void readDataFromClient(){
   client = server.available();
-  if( client != null ){
-    String input = client.readString();
-    parseJsonPaddles(input);
+  while( client != null ){
+    parseJsonPaddles(client.readString());
+    client = server.available();
   }
 }

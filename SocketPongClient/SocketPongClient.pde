@@ -1,5 +1,6 @@
 import java.util.*;
 import processing.net.*;
+import javax.swing.JOptionPane;
 
 static final boolean SERVER_DEBUG_ENABLED = false;
 static final boolean CLIENT_DEBUG_ENABLED = false;
@@ -21,14 +22,10 @@ int now;
 void setup() {
   size(800, 600);
   
+  myPaddle = getUserPaddle();
+  paddles.put(myPaddle.name, myPaddle);
   pongBalls = new ArrayList<Ball>();
-  myPaddle = new Paddle("client", paddleLength, Paddle.PADDLE_RIGHT, #0000FF);
-  paddles.put("client", myPaddle);
-  
   client = new Client(this, "76.167.223.125", 8443);
-  //wsc= new WebsocketClient(this, "ws://localhost:8443");
-  //wsc= new WebsocketClient(this,  "ws://76.167.223.125:8443");
-  //wsc= new WebsocketClient(this,  "ws://3.101.65.182:8080");
   now = millis();
 }
 
@@ -39,7 +36,8 @@ void draw() {
   
   readDataFromServer();
   
-  // Only need to update this client's paddle
+  // No need to update the other paddles, their info comes directly from
+  // the client messages
   myPaddle.update();
 
   drawPongBalls();
@@ -70,6 +68,28 @@ void drawScore(){
   fill(#FFFF00);
   text("Score: " + scoreLeft, 50, 50);
   text("Score: " + scoreRight, width - 100 - 50, 50);
+}
+
+Paddle getUserPaddle(){
+  String leftOrRight = "";
+  String initials = "";
+  
+  while( !leftOrRight.equals("l") && !leftOrRight.equals("r") ){
+    leftOrRight = JOptionPane.showInputDialog("Left or Right side?(l/r)").toLowerCase();
+  }
+  
+  while( initials.length() == 0 ){
+    initials = JOptionPane.showInputDialog("Enter your initials:").toUpperCase();
+  }
+  
+  initials = initials.length() > 3 ? initials.substring(0, 3) : initials;
+  color randomColor = color(random(255), random(255), color(255));
+
+  if( leftOrRight.equals("l") ){
+    return new Paddle(initials, paddleLength, Paddle.PADDLE_LEFT, randomColor);
+  } 
+  
+  return new Paddle(initials, paddleLength, Paddle.PADDLE_RIGHT, randomColor);
 }
 
 String generateJsonGameInfo(){
@@ -118,7 +138,7 @@ void parseJsonPaddles(String gameInfoJsonString){
     for( int i = 0; i < paddlesObj.size(); i++ ){
       JSONObject paddleObj = paddlesObj.getJSONObject(i);
       String paddleName = paddleObj.getString("name");
-      
+
       // DO NOT update the client's paddle from server info,
       // it's updated in the client code (i.e., this code)
       if( paddleName.equals(myPaddle.name) ){
