@@ -1,9 +1,10 @@
 import java.util.*;
-import websockets.*;
+import processing.net.*;
 
 static final boolean SERVER_DEBUG_ENABLED = false;
 static final boolean CLIENT_DEBUG_ENABLED = false;
-WebsocketServer ws;
+Server server;
+Client client;
 ArrayList<Ball> pongBalls;
 Object paddleHmModLock = new Object();
 HashMap<String, Paddle> paddles = new HashMap<String, Paddle>();
@@ -54,23 +55,33 @@ void setup(){
   pongBalls = new ArrayList<Ball>();
   myPaddle = new Paddle("server", paddleLength, Paddle.PADDLE_LEFT, #FF0000);
   paddles.put("server", myPaddle);
-  ws = new WebsocketServer(this, 8443, "");
+  server = new Server(this, 8443);
   now = millis();
 }
 
 void draw(){
   background(0);
 
-  /*
-   * Send message to client/player
-   */
-  if(millis() > now + updateFreqMs) {
-    jsonClientMsg = generateJsonGameInfo();
-    if( SERVER_DEBUG_ENABLED ){ println("Server Sending\n" + jsonClientMsg); }
-    ws.sendMessage(jsonClientMsg);
-    now = millis();
-  }
+  sendDataToClients();
   
+  readDataFromClient();
+  
+  addPongBall();
+  
+  purgePongBalls();
+
+  // No need to update the other paddles, their info comes directly from
+  // the client messages
+  myPaddle.update();
+  
+  updateAndDrawPongBalls(); //<>//
+  
+  drawPaddles();
+
+  drawScore();
+}
+
+void addPongBall(){
   if( keyPressed ){
     if( key == 's' && !ballAdded ){
       ballAdded = true;
@@ -81,8 +92,10 @@ void draw(){
       }
     }
   }
-  
-  Iterator<Ball> it = pongBalls.iterator();
+}
+
+void purgePongBalls(){
+Iterator<Ball> it = pongBalls.iterator();
   while(it.hasNext()){
     Ball b = it.next();
     if( !b.isAlive ){
@@ -94,13 +107,9 @@ void draw(){
       it.remove();
     }
   }
+}
 
-  /*
-   * No need to update the other paddles, their info comes directly from
-   * the client messages
-   */
-  myPaddle.update();
-  
+void updateAndDrawPongBalls(){
   for( Ball ball : pongBalls ){
     ball.update();
     
@@ -120,17 +129,16 @@ void draw(){
     }
     
     ball.draw();
-  } //<>//
-  
-  // DO NOT UPDATE paddles
+  }
+}
+
+void drawPaddles(){
   synchronized(paddleHmModLock){
     for( String paddleName : paddles.keySet() ){
       Paddle paddle = paddles.get(paddleName);
       paddle.draw();
     }
   }
-
-  drawScore();
 }
 
 void keyTyped(){
@@ -197,9 +205,24 @@ void parseJsonPaddles(String gameInfoJsonString){
 }
 
 /*
- * Called when getting a message from the client/player
+ * Send message to client(s)/player(s)
  */
-void webSocketServerEvent(String gameInfoJsonString){
-  if( CLIENT_DEBUG_ENABLED ){ println("message from client:\n" + gameInfoJsonString); }
-  parseJsonPaddles(gameInfoJsonString);
+void sendDataToClients(){
+  if(millis() > now + updateFreqMs) {
+    jsonClientMsg = generateJsonGameInfo();
+    if( SERVER_DEBUG_ENABLED ){ println("Server Sending\n" + jsonClientMsg); }
+    server.write(jsonClientMsg);
+    now = millis();
+  }
+}
+
+/*
+ * Get a message from the client(s)/player(s)
+ */
+void readDataFromClient(){
+  client = server.available();
+  if( client != null ){
+    String input = client.readString();
+    parseJsonPaddles(input);
+  }
 }

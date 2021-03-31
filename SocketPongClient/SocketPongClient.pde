@@ -1,9 +1,9 @@
 import java.util.*;
-import websockets.*;
+import processing.net.*;
 
 static final boolean SERVER_DEBUG_ENABLED = false;
 static final boolean CLIENT_DEBUG_ENABLED = false;
-WebsocketClient wsc;
+Client client;
 ArrayList<Ball> pongBalls;
 Object ballListModLock = new Object();
 Object paddleHmModLock = new Object();
@@ -24,7 +24,9 @@ void setup() {
   pongBalls = new ArrayList<Ball>();
   myPaddle = new Paddle("client", paddleLength, Paddle.PADDLE_RIGHT, #0000FF);
   paddles.put("client", myPaddle);
-  wsc= new WebsocketClient(this, "ws://localhost:8443");
+  
+  client = new Client(this, "76.167.223.125", 8443);
+  //wsc= new WebsocketClient(this, "ws://localhost:8443");
   //wsc= new WebsocketClient(this,  "ws://76.167.223.125:8443");
   //wsc= new WebsocketClient(this,  "ws://3.101.65.182:8080");
   now = millis();
@@ -32,32 +34,35 @@ void setup() {
 
 void draw() {
   background(0);
-
-  // Send message to server/host
-  if(millis() > now + updateFreqMs) {
-    jsonClientMsg = generateJsonGameInfo();
-    if( CLIENT_DEBUG_ENABLED ){ println("Client Sending\n" + jsonClientMsg); }
-    wsc.sendMessage(jsonClientMsg);
-    now = millis();
-  }
+  
+  sendDataToServer();
+  
+  readDataFromServer();
   
   // Only need to update this client's paddle
   myPaddle.update();
+
+  drawPongBalls();
+
+  drawPaddles();
   
+  drawScore();
+}
+
+void drawPongBalls(){
   synchronized(ballListModLock) {
     for( Ball ball : pongBalls ){
       ball.draw();
     }
   }
+}
 
-  // DO NOT UPDATE paddles, they are updated in each client's code
+void drawPaddles(){
   synchronized(paddleHmModLock){
     for( String paddleName : paddles.keySet() ){
       paddles.get(paddleName).draw();
     }
   }
-  
-  drawScore();
 }
 
 void drawScore(){
@@ -132,12 +137,28 @@ void parseJsonPaddles(String gameInfoJsonString){
   }
 }
 
-// Called when getting a message from the server/host
-void webSocketEvent(String gameInfoJsonString){
-  if( SERVER_DEBUG_ENABLED ){
-    println("message from server:\n" + gameInfoJsonString);
+/*
+ * Send message to server/host
+ */
+void sendDataToServer(){
+  if(millis() > now + updateFreqMs) {
+    jsonClientMsg = generateJsonGameInfo();
+    if( CLIENT_DEBUG_ENABLED ){ println("Client Sending\n" + jsonClientMsg); }
+    client.write(jsonClientMsg);
+    now = millis();
   }
-  parseJsonPaddles(gameInfoJsonString);
-  parseJsonPongBalls(gameInfoJsonString);
-  parseScore(gameInfoJsonString);
+}
+
+/*
+ * Called when getting a message from the server/host
+ */
+void readDataFromServer(){
+  if (client.available() > 0) { 
+    String gameInfoJsonString = client.readString();
+    
+    if( SERVER_DEBUG_ENABLED ){ println("message from server:\n" + gameInfoJsonString); }
+    parseJsonPaddles(gameInfoJsonString);
+    parseJsonPongBalls(gameInfoJsonString);
+    parseScore(gameInfoJsonString);
+  }
 }
