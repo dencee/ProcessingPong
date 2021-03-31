@@ -24,8 +24,14 @@ public class Ball {
   }
 
   void draw() {
-    fill(this.ballColor);
+    push();
+    
+    strokeWeight(5);
+    stroke(this.ballColor);
+    fill(this.ballColor, 100);
     ellipse(this.x, this.y, this.size, this.size);
+    
+    pop();
   }
 
   JSONObject toJsonObj(JSONObject jsonObj) {
