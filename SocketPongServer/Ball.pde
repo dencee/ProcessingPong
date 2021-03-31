@@ -1,14 +1,17 @@
 public class Ball {
+  int[] colorProgression = {#FFFFFF, #FFFF00, #FFFA00, #FF0000,
+                            #800080, #0000FF};
+  int colorProgressionIndex;
   int x;
   int y;
   int size;
   int speed;
   int speedX;
   int speedY;
+  Integer ballColor;
   boolean isAlive;
   boolean isIntersects;
   JSONObject jsonOut;
-  JSONObject jsonIn;
 
   Ball(int size, int speed) {
     this.x = width / 2;
@@ -17,15 +20,22 @@ public class Ball {
     this.speed = speed;
     this.speedX = 0;
     this.speedY = 0;
+    this.colorProgressionIndex = 0;
+    this.ballColor = colorProgression[this.colorProgressionIndex];
     this.isAlive = false;
     this.isIntersects = false;
     jsonOut = new JSONObject();
-    jsonIn = new JSONObject();
   }
 
   void draw() {
-    fill(#FFFFFF);
+    push();
+    
+    strokeWeight(5);
+    stroke(this.ballColor);
+    fill(this.ballColor, 100);
     ellipse(this.x, this.y, this.size, this.size);
+    
+    pop();
   }
 
   void update() {
@@ -92,12 +102,24 @@ public class Ball {
       if( !this.isIntersects ){
         this.isIntersects = true;
         
+        // Ball speed increases each collision with the paddle
+        this.speedX += 2;
+        this.speedY += 2;
+        
+        // Change the color the faster the ball gets!
+        this.colorProgressionIndex += 1;
+        if( this.colorProgressionIndex >= colorProgression.length ){
+          this.ballColor = color(random(255), random(255), random(255));
+        } else {
+          this.ballColor = colorProgression[colorProgressionIndex];
+        }
+        
         switch(sideX) {
           case "right":
-            this.speedX = (this.speedX < 0) ? -(this.speedX + 3) : this.speedX + 3;
+            this.speedX = (this.speedX < 0) ? -this.speedX : this.speedX;
             break;
           case "left":
-            this.speedX = (this.speedX > 0) ? -(this.speedX + 3) : this.speedX + 3;
+            this.speedX = (this.speedX > 0) ? -this.speedX: this.speedX;
             break;
           default:
             // Can't tell where the ball is so make
@@ -106,10 +128,10 @@ public class Ball {
         }   
         switch(sideY) {
           case "top":
-            this.speedY = (this.speedY > 0) ? -(this.speedY + 2) : this.speedY + 2;
+            this.speedY = (this.speedY > 0) ? -this.speedY : this.speedY;
             break;
           case "bottom":
-            this.speedY = (this.speedY < 0) ? -(this.speedY + 2) : this.speedY + 2;
+            this.speedY = (this.speedY < 0) ? -this.speedY : this.speedY;
             break;
           default:
             // Can't tell where the ball is so make
@@ -132,18 +154,18 @@ public class Ball {
 
   JSONObject toJsonObj(JSONObject jsonObj) {
     JSONObject obj = (jsonObj == null) ? jsonOut : jsonObj;
-
-    obj.setInt("ballX", this.x);
-    obj.setInt("ballY", this.y);
+    
+    obj.setInt("color", this.ballColor);
+    obj.setInt("x", this.x);
+    obj.setInt("y", this.y);
     return obj;
   }
 
   void parseJsonString(JSONObject jsonObj) {
-    jsonIn = jsonObj;
-
-    if ( jsonIn != null ) {
-      this.x = jsonIn.getInt("ballX");
-      this.y = jsonIn.getInt("ballY");
+    if ( jsonObj != null ) {
+      this.ballColor = jsonObj.getInt("color");
+      this.x = jsonObj.getInt("x");
+      this.y = jsonObj.getInt("y");
     }
   }
 }

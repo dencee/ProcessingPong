@@ -36,12 +36,14 @@ public class Paddle {
   void draw(){
     push();
     
-    fill(this.paddleColor);
+    strokeWeight(5);
+    stroke(this.paddleColor);
+    fill(this.paddleColor, 50);
     rect(this.x, this.y, PADDLE_WIDTH, this.size);
     textSize(22);
     fill((this.paddleColor ^ 0x00FFFFFF) | 0xFF000000);  // Invert color with max alpha 
     strokeWeight(15);
-    text(this.name.replace("", "\n").trim(), this.x, this.y + 20);
+    text(this.name.replace("", "\n").trim(), this.x + 5, this.y + 25);
     
     pop();
   }
