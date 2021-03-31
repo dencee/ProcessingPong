@@ -4,9 +4,10 @@ import websockets.*;
 static final boolean SERVER_DEBUG_ENABLED = false;
 static final boolean CLIENT_DEBUG_ENABLED = false;
 WebsocketServer ws;
-Paddle paddleLeft;
-Paddle paddleRight;
 ArrayList<Ball> pongBalls;
+Object paddleHmModLock = new Object();
+HashMap<String, Paddle> paddles = new HashMap<String, Paddle>();
+Paddle myPaddle;
 
 String jsonClientMsg;
 boolean ballAdded = false;
@@ -18,11 +19,41 @@ int updateFreqMs = 20;
 int now;
 
 void setup(){
-  size(800, 800);
+  size(800, 600);
+  background(0);
+/*  
+  String leftOrRight = "";
+  String initials = "";
   
+  fill(255);
+  textSize(26);
+  text("Do you want a paddle on the\n    left or right side (L/R)?", 200, height/2);
+  while(true){
+    if( keyPressed ){
+      if( key==ENTER||key==RETURN ){
+        break;
+      } else {
+        println("pressed");
+        leftOrRight += key;
+        text(leftOrRight, 100, height/2 + 100);
+      }
+    }
+  }
+  
+  while(true){
+    text("Enter Your Initials", 100, height/2);
+    if( keyPressed ){
+      if( key==ENTER||key==RETURN ){
+        break;
+      } else {
+        initials += key;
+      }
+    }
+  }
+*/  
   pongBalls = new ArrayList<Ball>();
-  paddleLeft = new Paddle(paddleLength, Paddle.PADDLE_LEFT, #FFFF00);
-  paddleRight = new Paddle(paddleLength, Paddle.PADDLE_RIGHT, null);
+  myPaddle = new Paddle("server", paddleLength, Paddle.PADDLE_LEFT, #FF0000);
+  paddles.put("server", myPaddle);
   ws = new WebsocketServer(this, 8443, "");
   now = millis();
 }
@@ -68,40 +99,68 @@ void draw(){
    * No need to update the other paddles, their info comes directly from
    * the client messages
    */
-  paddleLeft.update();
+  myPaddle.update();
+  
   for( Ball ball : pongBalls ){
     ball.update();
     
-    if( ball.x < width / 2 ){
-      ball.isCollision(paddleLeft);
-    } else {
-      ball.isCollision(paddleRight);
+    for( String paddleName : paddles.keySet() ){
+      Paddle paddle = paddles.get(paddleName);
+      
+      // TODO: This can be optimized
+      if( ball.x < width / 2 ){
+        if( paddle.paddleLR == Paddle.PADDLE_LEFT ){
+          ball.isCollision(paddle);
+        }
+      } else {
+        if( paddle.paddleLR == Paddle.PADDLE_RIGHT ){
+          ball.isCollision(paddle);
+        }
+      }
     }
     
     ball.draw();
   } //<>//
+  
+  // DO NOT UPDATE paddles
+  synchronized(paddleHmModLock){
+    for( String paddleName : paddles.keySet() ){
+      Paddle paddle = paddles.get(paddleName);
+      paddle.draw();
+    }
+  }
 
-  paddleLeft.draw();
-  paddleRight.draw();
   drawScore();
+}
+
+void keyTyped(){
+  
 }
 
 void keyReleased(){
  ballAdded = false;
- paddleLeft.paddleDirection = ""; 
- paddleRight.paddleDirection = ""; 
+ myPaddle.paddleDirection = ""; 
 }
 
 String generateJsonGameInfo(){
-    JSONObject obj = paddleLeft.toJsonObj(null);
-    JSONArray arrObj = new JSONArray();
+    JSONArray paddleArrObj = new JSONArray();
+    JSONArray ballArrObj = new JSONArray();
+    
+    int cnt = 0;
+    for( String id : paddles.keySet() ){
+      JSONObject paddleObj = paddles.get(id).toJsonObj(null);
+      paddleArrObj.setJSONObject(cnt, paddleObj);
+      cnt++;
+    }
     
     for( int i = 0; i < pongBalls.size(); i++ ){
       JSONObject ballObj = pongBalls.get(i).toJsonObj(null); //<>//
-      arrObj.setJSONObject(i, ballObj);
+      ballArrObj.setJSONObject(i, ballObj);
     }
     
-    obj.setJSONArray("pongBalls", arrObj);    
+    JSONObject obj = new JSONObject();
+    obj.setJSONArray("paddles", paddleArrObj);
+    obj.setJSONArray("pongBalls", ballArrObj);    
     obj.setInt("scoreLeft", scoreLeft);
     obj.setInt("scoreRight", scoreRight);
     
@@ -109,11 +168,32 @@ String generateJsonGameInfo(){
 }
 
 void drawScore(){
-  textSize(16);
-  fill(paddleLeft.paddleColor);
+  textSize(22);
+  fill(#FFFF00);
   text("Score: " + scoreLeft, 50, 50);
-  fill(paddleRight.paddleColor);
   text("Score: " + scoreRight, width - 100 - 50, 50);
+}
+
+void parseJsonPaddles(String gameInfoJsonString){
+  JSONObject obj = parseJSONObject(gameInfoJsonString);
+  JSONArray paddlesObj = obj.getJSONArray("paddles");
+  
+  // Code needs to be synch because it modifies the size of the paddles HM 
+  synchronized(paddleHmModLock){ //<>//
+    for( int i = 0; i < paddlesObj.size(); i++ ){
+      JSONObject paddleObj = paddlesObj.getJSONObject(i);
+      String paddleName = paddleObj.getString("name");
+      
+      if( paddles.containsKey( paddleName ) ){
+        Paddle paddle = paddles.get(paddleName);
+        paddle.x = paddleObj.getInt("x");
+        paddle.y = paddleObj.getInt("y");
+      } else {
+        int paddleLR = paddleObj.getInt("x") == 0 ? Paddle.PADDLE_LEFT : Paddle.PADDLE_RIGHT;
+        paddles.put(paddleName, new Paddle(paddleName, paddleLength, paddleLR, paddleObj.getInt("Color")));
+      }
+    }
+  }
 }
 
 /*
@@ -121,5 +201,5 @@ void drawScore(){
  */
 void webSocketServerEvent(String gameInfoJsonString){
   if( CLIENT_DEBUG_ENABLED ){ println("message from client:\n" + gameInfoJsonString); }
-  paddleRight.parseJsonString(gameInfoJsonString);
+  parseJsonPaddles(gameInfoJsonString);
 }

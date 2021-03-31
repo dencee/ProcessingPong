@@ -8,27 +8,28 @@ public class Paddle {
   int speed;
   boolean isAlive;
   Integer paddleColor;
+  Integer paddleLR;
   String paddleDirection;
   String name;
   JSONObject jsonOut;
   JSONObject jsonIn;
   
-  Paddle(int paddleSize, int paddleLR, Integer paddleColor){
+  Paddle(String name, int paddleSize, int paddleLR, Integer paddleColor){
+    this.name = name;
     this.y = height / 2;
     this.size = paddleSize;
     this.speed = 15;
     this.isAlive = false;
     this.paddleColor = (paddleColor == null) ? #FFFFFF : paddleColor;
+    this.paddleLR = paddleLR;
     this.paddleDirection = "";
     jsonOut = new JSONObject();
     jsonIn = new JSONObject();
     
     if( paddleLR == PADDLE_LEFT ){
       this.x = 0;
-      this.name = "paddleL";
     } else if( paddleLR == PADDLE_RIGHT ){
       this.x = width - PADDLE_WIDTH;
-      this.name = "paddleR";
     }
   }
   
@@ -53,18 +54,19 @@ public class Paddle {
   JSONObject toJsonObj(JSONObject jsonObj){
     this.jsonOut = (jsonObj == null) ? new JSONObject() : jsonObj;
     
-    this.jsonOut.setInt(this.name + "X", this.x);
-    this.jsonOut.setInt(this.name + "Y", this.y);
-    this.jsonOut.setInt(this.name + "Color", this.paddleColor);
+    this.jsonOut.setString("name", this.name);
+    this.jsonOut.setInt("x", this.x);
+    this.jsonOut.setInt("y", this.y);
+    this.jsonOut.setInt("Color", this.paddleColor);
     return this.jsonOut;
   }
   
   void parseJsonString(String jsonString){
     jsonIn = parseJSONObject(jsonString);
     if( jsonIn != null ){
-      this.x = jsonIn.getInt(this.name + "X");
-      this.y = jsonIn.getInt(this.name + "Y");
-      this.paddleColor = jsonIn.getInt(this.name + "Color");
+      this.x = jsonIn.getInt("x");
+      this.y = jsonIn.getInt("y");
+      this.paddleColor = jsonIn.getInt("Color");
     }
   }
 }
