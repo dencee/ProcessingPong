@@ -25,8 +25,8 @@ void setup() {
   myPaddle = getUserPaddle();
   paddles.put(myPaddle.name, myPaddle);
   pongBalls = new ArrayList<Ball>();
-  //client = new Client(this, "76.167.223.125", 8443);
-  client = new Client(this, "44.233.116.248", 8080);
+  client = new Client(this, "76.167.223.125", 8443);
+  //client = new Client(this, "44.233.116.248", 8080);
   now = millis();
 }
 
